@@ -6,10 +6,16 @@ pipeline {
         stage('Lint and Test') {
             steps {
                 sh '''
-                    set -e
-                    test -z "$(gofmt -l .)"
-                    go vet ./...
-                    go test -race ./...
+                    docker run --rm \
+                        -v "$PWD:/app" \
+                        -w /app \
+                        golang:1.27.2-alpine \
+                        sh -c '
+                            set -e
+                            test -z "$(gofmt -l .)"
+                            go vet ./...
+                            go test -race ./...
+                        '
                 '''
             }
         }
