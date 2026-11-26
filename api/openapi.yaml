@@ -3,6 +3,10 @@ info:
   title: Information Exchange Service
   description: API для обмена информацией об угрозах. 
   version: 1.0.0
+  
+servers:
+  - url: http://localhost:8080
+    description: Local development server
 
 paths:
   /info/{md5}:

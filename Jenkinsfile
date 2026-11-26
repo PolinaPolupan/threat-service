@@ -9,7 +9,7 @@ stage('Lint and Test') {
             docker run --rm \
                 -v jenkins_jenkins_home:/jenkins_home \
                 -w /jenkins_home/workspace/threat-service-pipeline \
-                golang:1.27.2-alpine \
+                golang:1.27.2 \
                 sh -c '
                     set -e
                     test -z "$(gofmt -l .)"

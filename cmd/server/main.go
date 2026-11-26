@@ -54,9 +54,13 @@ func run() error {
 		return fmt.Errorf("failed to initialize validation middleware: %w", err)
 	}
 
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /health", handler.HealthHandler)
+	mux.Handle("/", middleware(router))
+
 	server := &http.Server{
 		Addr:              ":8080",
-		Handler:           middleware(router),
+		Handler:           corsMiddleware(mux),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
@@ -96,4 +100,30 @@ func run() error {
 
 	log.Println("Server stopped")
 	return nil
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+
+		if origin == "http://localhost:8081" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Vary", "Origin")
+			w.Header().Set(
+				"Access-Control-Allow-Methods",
+				"GET, POST, PUT, OPTIONS",
+			)
+			w.Header().Set(
+				"Access-Control-Allow-Headers",
+				"Content-Type, Authorization",
+			)
+		}
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }

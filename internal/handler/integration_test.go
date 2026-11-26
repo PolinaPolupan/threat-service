@@ -1,4 +1,3 @@
-
 package handler_test
 
 import (
@@ -18,7 +17,6 @@ import (
 	"threat-service/internal/validation"
 )
 
-
 func newIntegrationServer(t *testing.T) *httptest.Server {
 	t.Helper()
 
@@ -29,6 +27,9 @@ func newIntegrationServer(t *testing.T) *httptest.Server {
 	router := api.Handler(h)
 
 	spec, err := validation.LoadSpec("../../api/openapi.yaml")
+	if len(spec.Servers) > 0 {
+		spec.Servers[0].URL = "/"
+	}
 	if err != nil {
 		t.Fatalf("failed to load OpenAPI spec: %v", err)
 	}
@@ -86,7 +87,6 @@ func requestJSON(
 	return resp.StatusCode, respBody
 }
 
-
 func TestThreatAPIWorkflow(t *testing.T) {
 	server := newIntegrationServer(t)
 	client := server.Client()
@@ -101,17 +101,16 @@ func TestThreatAPIWorkflow(t *testing.T) {
 		"severity":    "low",
 	}
 
-	status, _ := requestJSON(
+	status, body := requestJSON(
 		t, client, http.MethodPost,
 		server.URL+"/info", createRequest,
 	)
 
 	if status != http.StatusCreated {
-		t.Fatalf("POST: expected 201, got %d", status)
+		t.Fatalf("POST: expected 201, got %d: %s", status, body)
 	}
 
-
-	status, body := requestJSON(
+	status, body = requestJSON(
 		t, client, http.MethodGet, url, nil,
 	)
 
@@ -143,7 +142,6 @@ func TestThreatAPIWorkflow(t *testing.T) {
 		t.Error("initial description was not preserved")
 	}
 
-
 	updateRequest := map[string]any{
 		"name":     "Updated Trojan",
 		"severity": "high",
@@ -156,7 +154,6 @@ func TestThreatAPIWorkflow(t *testing.T) {
 	if status != http.StatusNoContent {
 		t.Fatalf("PUT: expected 204, got %d", status)
 	}
-
 
 	status, body = requestJSON(
 		t, client, http.MethodGet, url, nil,
@@ -183,7 +180,6 @@ func TestThreatAPIWorkflow(t *testing.T) {
 		t.Error("update did not preserve omitted description")
 	}
 
-
 	status, _ = requestJSON(
 		t, client, http.MethodPost,
 		server.URL+"/info", createRequest,
@@ -193,7 +189,6 @@ func TestThreatAPIWorkflow(t *testing.T) {
 		t.Errorf("duplicate POST: expected 409, got %d", status)
 	}
 
-	
 	missingMD5 := strings.Repeat("b", 32)
 	missingURL := fmt.Sprintf("%s/info/%s", server.URL, missingMD5)
 
@@ -205,7 +200,6 @@ func TestThreatAPIWorkflow(t *testing.T) {
 		t.Errorf("missing GET: expected 404, got %d", status)
 	}
 }
-
 
 func TestThreatAPIValidation(t *testing.T) {
 	server := newIntegrationServer(t)
@@ -244,8 +238,8 @@ func TestThreatAPIValidation(t *testing.T) {
 
 	t.Run("UnknownField", func(t *testing.T) {
 		payload := map[string]any{
-			"md5":         strings.Repeat("b", 32),
-			"name":        "Test Trojan",
+			"md5":          strings.Repeat("b", 32),
+			"name":         "Test Trojan",
 			"unknownField": "unexpected",
 		}
 
@@ -259,4 +253,3 @@ func TestThreatAPIValidation(t *testing.T) {
 		}
 	})
 }
-

@@ -1,0 +1,18 @@
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Go binaries
+/server
+/threat-service
+
+# Test and coverage files
+*.test
+coverage.out
+coverage.html
+
+# IDE and OS files
+.idea/
+.vscode/
+.DS_Store
