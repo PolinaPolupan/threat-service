@@ -82,15 +82,18 @@ pipeline {
                 )]) {
                     sh '''
                         ssh -i "$SSH_KEY" \
-                            "$SSH_USER@192.168.1.5" \
-                            "for i in \$(seq 1 30); do
-                                if curl -fsS http://localhost:8080/health; then
-                                    exit 0
-                                fi
-                                sleep 2
-                            done
-                            echo 'Health check failed'
-                            exit 1"
+                            "$SSH_USER@192.168.1.5" 'bash -s' <<'REMOTE'
+                        for i in $(seq 1 30); do
+                            if curl -fsS http://localhost:8080/health; then
+                                echo "Health check passed"
+                                exit 0
+                            fi
+                            sleep 2
+                        done
+
+                        echo "Health check failed"
+                        exit 1
+                        REMOTE
                     '''
                 }
             }
