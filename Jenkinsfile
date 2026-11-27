@@ -113,17 +113,29 @@ post {
                     keyFileVariable: 'SSH_KEY',
                     usernameVariable: 'SSH_USER'
                 )]) {
-                    sh '''
-                        ssh -i "$SSH_KEY" \
-                            "$SSH_USER@192.168.1.5" \
-                            "cd ~/threat-service-deploy && \
-			    test -s .previous_image && \
-grep -v '^IMAGE_TAG=' .env > .env.tmp && \
-cat .previous_image >> .env.tmp && \
-                             mv .env.tmp .env && \
-                             docker compose --env-file .env -f docker-compose.deploy.yml pull app && \
-                             docker compose --env-file .env -f docker-compose.deploy.yml up -d"
-                    '''
+		sh '''
+    ssh -i "$SSH_KEY" \
+        "$SSH_USER@192.168.1.5" \
+'set -e
+         cd ~/threat-service-deploy
+         test -s .previous_image
+         grep -v "^IMAGE_TAG=" .env > .env.tmp
+         cat .previous_image >> .env.tmp
+         mv .env.tmp .env
+         docker compose --env-file .env -f docker-compose.deploy.yml pull app
+         docker compose --env-file .env -f docker-compose.deploy.yml up -d
+         i=0
+         while [ "$i" -lt 30 ]; do
+             if curl -fsS http://localhost:8080/health; then
+                 echo "Rollback health check passed"
+                 exit 0
+             fi
+             i=$((i + 1))
+             sleep 2
+         done
+         echo "Rollback health check failed"
+         exit 1'
+'''
                 }
             } else {
                 echo 'Deployment did not start. Rollback is not required.'
