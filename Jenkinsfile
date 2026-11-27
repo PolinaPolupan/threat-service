@@ -52,5 +52,22 @@ pipeline {
                 }
             }
         }
+
+        stage('Test Deployment SSH') {
+            steps {
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: 'deploy-ssh-key',
+                    keyFileVariable: 'SSH_KEY',
+                    usernameVariable: 'SSH_USER'
+                )]) {
+                    sh '''
+                        ssh -i "$SSH_KEY" \
+                            -o StrictHostKeyChecking=accept-new \
+                            "$SSH_USER@192.168.1.5" \
+                            "echo SSH connection successful"
+                    '''
+                }
+            }
+        }
     }
 }
