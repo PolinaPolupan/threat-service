@@ -4,7 +4,6 @@ pipeline {
 
     environment {
         IMAGE_NAME = 'ghcr.io/polinapolupan/threat-service'
-DEPLOY_STARTED = 'false'
     }
 
     stages {
@@ -58,6 +57,7 @@ DEPLOY_STARTED = 'false'
 
 stage('Deploy') {
     steps {
+    sh 'rm -f .deploy_started'
         withCredentials([sshUserPrivateKey(
             credentialsId: 'deploy-ssh-key',
             keyFileVariable: 'SSH_KEY',
@@ -71,7 +71,7 @@ stage('Deploy') {
             '''
 
             script {
-                env.DEPLOY_STARTED = 'true'
+                writeFile file: '.deploy_started', text: 'true'
             }
 
             sh '''
@@ -101,7 +101,7 @@ stage('Health Check') {
 post {
     failure {
         script {
-            if (env.DEPLOY_STARTED == 'true') {
+            if (fileExists('.deploy_started')) {
                 echo 'Deployment failed. Rolling back...'
 
                 withCredentials([sshUserPrivateKey(
