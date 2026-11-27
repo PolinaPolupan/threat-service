@@ -92,11 +92,7 @@ stage('Health Check') {
             keyFileVariable: 'SSH_KEY',
             usernameVariable: 'SSH_USER'
         )]) {
-            sh '''
-                ssh -i "$SSH_KEY" \
-                    "$SSH_USER@192.168.1.5" \
-                    'i=0; while [ "$i" -lt 30 ]; do curl -fsS http://localhost:8080/health && { echo "Health check passed"; exit 0; }; i=$((i + 1)); sleep 2; done; echo "Health check failed"; exit 1'
-            '''
+            sh 'exit 1'
         }
     }
 }
