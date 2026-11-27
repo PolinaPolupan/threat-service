@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -53,7 +54,7 @@ pipeline {
             }
         }
 
-        stage('Test Deployment SSH') {
+        stage('Deploy') {
             steps {
                 withCredentials([sshUserPrivateKey(
                     credentialsId: 'deploy-ssh-key',
@@ -62,12 +63,15 @@ pipeline {
                 )]) {
                     sh '''
                         ssh -i "$SSH_KEY" \
-                            -o StrictHostKeyChecking=accept-new \
                             "$SSH_USER@192.168.1.5" \
-                            "echo SSH connection successful"
+                            "cd ~/threat-service-deploy && \
+                             sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=${GIT_COMMIT}/' .env && \
+                             docker compose --env-file .env -f docker-compose.deploy.yml pull app && \
+                             docker compose --env-file .env -f docker-compose.deploy.yml up -d"
                     '''
                 }
             }
         }
     }
 }
+
