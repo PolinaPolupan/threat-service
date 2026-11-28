@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
@@ -32,10 +33,22 @@ func NewMiddleware(spec *openapi3.T) (func(http.Handler) http.Handler, error) {
 		return nil, err
 	}
 
+	if len(spec.Servers) == 0 {
+		return nil, fmt.Errorf("OpenAPI spec has no servers")
+	}
+
+	serverURL, err := url.Parse(spec.Servers[0].URL)
+	if err != nil {
+		return nil, err
+	}
+
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			route, pathParams, err := router.FindRoute(r)
+			routeRequest := r.Clone(r.Context())
+			routeRequest.Host = serverURL.Host
+
+			route, pathParams, err := router.FindRoute(routeRequest)
 			if err != nil {
 				http.Error(w, fmt.Sprintf("Invalid route: %v", err), http.StatusBadRequest)
 				return
